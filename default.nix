@@ -11,6 +11,7 @@ let
 
   devTools = [
     haskellPackages.ghcid
+    pkgs.sqlite
   ];
 
   shellDrv =
