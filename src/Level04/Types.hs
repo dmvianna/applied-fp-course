@@ -14,6 +14,7 @@ module Level04.Types
   , getCommentText
   , renderContentType
   , fromDBComment
+  , fromDBTopic
   ) where
 
 import           GHC.Generics              (Generic)
@@ -30,7 +31,7 @@ import qualified Data.Aeson.Types          as A
 
 import           Data.Time                 (UTCTime)
 
-import           Level04.DB.Types          (DBComment (..))
+import           Level04.DB.Types          (DBComment (..), DBTopic (..))
 
 -- Notice how we've moved these types into their own modules. It's cheap and
 -- easy to add modules to carve out components in a Haskell application. So
@@ -104,6 +105,14 @@ fromDBComment (DBComment dbId dbTopic dbBody dbTime) =
     (_, Left e, _, _)         -> Left e
     (_, _, Left e, _)         -> Left e
     (i, Right t, Right c, t') -> Right $ Comment (CommentId i) t c t'
+
+fromDBTopic
+  :: DBTopic
+  -> Either Error Topic
+fromDBTopic (DBTopic dbTopic) =
+  case mkTopic dbTopic of
+    Left e  -> Left e
+    Right t -> Right t
 
 data RqType
   = AddRq Topic CommentText

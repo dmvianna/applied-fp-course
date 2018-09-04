@@ -4,7 +4,7 @@ module Level04.Types.Error
   , nonEmptyText
   ) where
 
-import Data.Text (Text)
+import           Data.Text (Text)
 
 data Error
   = UnknownRoute
