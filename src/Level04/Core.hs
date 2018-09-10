@@ -26,19 +26,23 @@ import           Data.Either                        (Either (Left, Right),
 import           Data.Semigroup                     ((<>))
 import           Data.Text                          (Text)
 import           Data.Text.Encoding                 (decodeUtf8)
+import           Data.Text.Lazy                     (fromStrict)
+import           Data.Text.Lazy.Encoding            (encodeUtf8)
 
 import           Data.Aeson                         (ToJSON)
 import qualified Data.Aeson                         as A
 
-import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
+import           Database.SQLite.SimpleErrors.Types (SQLiteResponse (..))
 
-import           Level04.Conf                       (Conf, firstAppConfig)
+import           Level04.Conf                       (Conf, dbFilePath,
+                                                     firstAppConfig)
 import qualified Level04.DB                         as DB
 import           Level04.Types                      (ContentType (JSON, PlainText),
-                                                     Error (EmptyCommentText, EmptyTopic, UnknownRoute),
+                                                     Error (DBError, EmptyCommentText, EmptyTopic, UnknownRoute),
                                                      RqType (AddRq, ListRq, ViewRq),
-                                                     mkCommentText, mkTopic,
-                                                     renderContentType)
+                                                     getTopic, mkCommentText,
+                                                     mkTopic, renderContentType)
+import           Level04.Types.Topic                (Topic)
 
 -- Our start-up is becoming more complicated and could fail in new and
 -- interesting ways. But we also want to be able to capture these errors in a
@@ -48,7 +52,8 @@ data StartUpError
   deriving Show
 
 runApp :: IO ()
-runApp = error "runApp needs re-implementing"
+runApp =
+  error "runApp not implemented"
 
 -- We need to complete the following steps to prepare our app requirements:
 --
@@ -59,10 +64,13 @@ runApp = error "runApp needs re-implementing"
 --
 prepareAppReqs
   :: IO ( Either StartUpError DB.FirstAppDB )
-prepareAppReqs =
-  error "prepareAppReqs not implemented"
+prepareAppReqs = do
+    eitherDB <- DB.initDB . dbFilePath $ firstAppConfig
+    pure $ either leftPath Right eitherDB
+    where
+      leftPath e = Left $ DBInitErr e
 
--- | Some helper functions to make our lives a little more DRY.
+-- | Some helper functions to make our lives a little more DRY.x
 mkResponse
   :: Status
   -> ContentType
@@ -128,12 +136,17 @@ handleRequest
   :: DB.FirstAppDB
   -> RqType
   -> IO (Either Error Response)
-handleRequest _db (AddRq _ _) =
-  (resp200 PlainText "Success" <$) <$> error "AddRq handler not implemented"
-handleRequest _db (ViewRq _)  =
-  error "ViewRq handler not implemented"
-handleRequest _db ListRq      =
-  error "ListRq handler not implemented"
+handleRequest _db rq =
+  case rq of
+    AddRq topic commText ->
+      (resp200 PlainText "Success" <$)
+      <$> respond (DB.addCommentToTopic _db topic commText)
+    ViewRq topic -> respond (DB.getComments _db topic)
+    ListRq       -> respond (DB.getTopics _db)
+  where
+    respond f = do
+      x <- f
+      pure (either Left (Right . resp200Json) x)
 
 mkRequest
   :: Request
@@ -177,3 +190,5 @@ mkErrorResponse EmptyCommentText =
   resp400 PlainText "Empty Comment"
 mkErrorResponse EmptyTopic =
   resp400 PlainText "Empty Topic"
+mkErrorResponse DBError =
+  resp500 PlainText "Internal Server Error"

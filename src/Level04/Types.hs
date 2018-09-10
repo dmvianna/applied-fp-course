@@ -40,7 +40,7 @@ import           Level04.DB.Types          (DBComment (..), DBTopic (..))
 -- just spin up another module.
 import           Level04.Types.CommentText (CommentText, getCommentText,
                                             mkCommentText)
-import           Level04.Types.Error       (Error (EmptyCommentText, EmptyTopic, UnknownRoute))
+import           Level04.Types.Error       (Error (DBError, EmptyCommentText, EmptyTopic, UnknownRoute))
 import           Level04.Types.Topic       (Topic, getTopic, mkTopic)
 
 
