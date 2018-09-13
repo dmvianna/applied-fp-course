@@ -68,32 +68,41 @@ runAppM (AppM m) =
 
 instance Functor AppM where
   fmap :: (a -> b) -> AppM a -> AppM b
-  fmap = error "fmap for AppM not implemented"
+  fmap f (AppM x') = do
+    ea <- liftIO x'
+    AppM $ pure $ either Left (\a -> Right $ f a) ea
 
 instance Applicative AppM where
   pure :: a -> AppM a
-  pure  = error "pure for AppM not implemented"
+  pure = AppM . pure . pure
 
   (<*>) :: AppM (a -> b) -> AppM a -> AppM b
-  (<*>) = error "spaceship for AppM not implemented"
+  (<*>) (AppM f') (AppM x') = do
+    x <- liftEither =<< liftIO x'
+    f <- liftEither =<< liftIO f'
+    AppM $ pure $ pure $ f x
 
 instance Monad AppM where
   return :: a -> AppM a
-  return = error "return for AppM not implemented"
+  return = pure
 
   (>>=) :: AppM a -> (a -> AppM b) -> AppM b
-  (>>=)  = error "bind for AppM not implemented"
+  (>>=) (AppM x') f' = do
+    x <- liftEither =<< liftIO x'
+    liftEither =<< liftIO (runAppM (f' x))
 
 instance MonadIO AppM where
   liftIO :: IO a -> AppM a
-  liftIO = error "liftIO for AppM not implemented"
+  liftIO = liftIO >>= pure
 
 instance MonadError Error AppM where
   throwError :: Error -> AppM a
-  throwError = error "throwError for AppM not implemented"
+  throwError = AppM . pure . Left
 
   catchError :: AppM a -> (Error -> AppM a) -> AppM a
-  catchError = error "catchError for AppM not implemented"
+  catchError x' f = do
+    x <- liftIO $ runAppM x'
+    either f pure x
 
 -- This is a helper function that will `lift` an Either value into our new AppM
 -- by applying `throwError` to the Left value, and using `pure` to lift the
@@ -106,4 +115,4 @@ liftEither
   :: Either Error a
   -> AppM a
 liftEither =
-  error "throwLeft not implemented"
+  either throwError pure
