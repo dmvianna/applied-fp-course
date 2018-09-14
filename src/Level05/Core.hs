@@ -65,8 +65,11 @@ runApp = do
 --
 prepareAppReqs
   :: IO ( Either StartUpError DB.FirstAppDB )
-prepareAppReqs =
-  error "copy your prepareAppReqs from the previous level."
+prepareAppReqs = do
+    eitherDB <- DB.initDB . Conf.dbFilePath $ Conf.firstAppConfig
+    pure $ either leftPath Right eitherDB
+    where
+      leftPath e = Left $ DBInitErr e
 
 -- | Some helper functions to make our lives a little more DRY.
 mkResponse

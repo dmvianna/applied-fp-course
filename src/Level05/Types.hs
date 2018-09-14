@@ -15,6 +15,7 @@ module Level05.Types
   , getCommentText
   , renderContentType
   , fromDBComment
+  , fromDBTopic
   ) where
 
 import           GHC.Generics                       (Generic)
@@ -38,7 +39,8 @@ import qualified Data.Aeson                         as A
 import qualified Data.Aeson.Types                   as A
 
 import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
-import           Level05.DB.Types                   (DBComment (dbCommentComment, dbCommentId, dbCommentTime, dbCommentTopic))
+import           Level05.DB.Types                   (DBComment (dbCommentComment, dbCommentId, dbCommentTime, dbCommentTopic),
+                                                     DBTopic (..))
 import           Level05.Types.CommentText          (CommentText,
                                                      getCommentText,
                                                      mkCommentText)
@@ -104,6 +106,15 @@ fromDBComment dbc =
       <$> (mkTopic       $ dbCommentTopic dbc)
       <*> (mkCommentText $ dbCommentComment dbc)
       <*> (pure          $ dbCommentTime dbc)
+
+fromDBTopic
+  :: DBTopic
+  -> Either Error Topic
+fromDBTopic (DBTopic dbTopic) =
+  case mkTopic dbTopic of
+    Left e  -> Left e
+    Right t -> Right t
+
 
 -- We have to be able to:
 -- - Comment on a given topic

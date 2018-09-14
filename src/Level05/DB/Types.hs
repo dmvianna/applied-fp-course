@@ -28,3 +28,8 @@ instance FromRow DBComment where
             <*> field
             <*> field
             <*> field
+
+newtype DBTopic = DBTopic Text
+
+instance FromRow DBTopic where
+  fromRow = DBTopic <$> field
