@@ -52,8 +52,11 @@ data StartUpError
   deriving Show
 
 runApp :: IO ()
-runApp =
-  error "runApp not implemented"
+runApp = do
+  eDB <- prepareAppReqs
+  case eDB of
+    Right db -> run 3000 $ app db
+    Left e   -> putStrLn $ show e
 
 -- We need to complete the following steps to prepare our app requirements:
 --
