@@ -53,8 +53,8 @@ runApp = do
   cfgE <- prepareAppReqs
   -- Loading the configuration can fail, so we have to take that into account now.
   case cfgE of
-    Left err   -> undefined
-    Right _cfg -> run undefined undefined
+    Left err   -> putStrLn $ show err
+    Right _cfg -> run 3000 $ app _cfg
 
 -- We need to complete the following steps to prepare our app requirements:
 --
@@ -121,8 +121,11 @@ resp200Json =
 app
   :: DB.FirstAppDB
   -> Application
-app db rq cb =
-  error "app not reimplemented"
+app db rq cb = do
+  resp <- liftIO $ runAppM $ handleRequest db =<< mkRequest rq
+  case resp of
+    Right r -> cb r
+    Left e  -> cb $ mkErrorResponse e
 
 handleRequest
   :: DB.FirstAppDB
