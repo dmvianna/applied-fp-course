@@ -55,8 +55,10 @@ runApp :: IO ()
 runApp = do
   eDB <- prepareAppReqs
   case eDB of
-    Right db -> run 3000 $ app db
-    Left e   -> putStrLn $ show e
+    Right db       -> run 3000 $ app db
+    Left (DBInitErr e) -> do
+      putStrLn $ show e
+      run 3000 $ (\_ resp -> resp $ mkErrorResponse DBError)
 
 -- We need to complete the following steps to prepare our app requirements:
 --
