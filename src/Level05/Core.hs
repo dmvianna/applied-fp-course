@@ -53,8 +53,10 @@ runApp = do
   cfgE <- prepareAppReqs
   -- Loading the configuration can fail, so we have to take that into account now.
   case cfgE of
-    Left err   -> putStrLn $ show err
     Right _cfg -> run 3000 $ app _cfg
+    Left (DBInitErr e) -> do
+      putStrLn $ show e
+      run 3000 $ (\_ resp -> resp $ mkErrorResponse $ DBError e)
 
 -- We need to complete the following steps to prepare our app requirements:
 --
