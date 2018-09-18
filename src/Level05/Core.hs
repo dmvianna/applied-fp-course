@@ -125,9 +125,7 @@ app
   -> Application
 app db rq cb = do
   resp <- liftIO $ runAppM $ handleRequest db =<< mkRequest rq
-  case resp of
-    Right r -> cb r
-    Left e  -> cb $ mkErrorResponse e
+  cb $ either mkErrorResponse id resp
 
 handleRequest
   :: DB.FirstAppDB
