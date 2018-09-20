@@ -138,3 +138,5 @@ deleteTopic db topic =
   in do
     rs <- liftIO query
     pure rs
+
+-- Go to 'src/Level05/Core.hs' next.

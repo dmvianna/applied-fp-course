@@ -242,3 +242,5 @@ instance FromJSON PartialConf
 instance FromJSON Port
 
 instance FromJSON DBFilePath
+
+-- Go to 'src/Level06/Conf/File.hs' next

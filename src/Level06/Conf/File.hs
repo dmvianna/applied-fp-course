@@ -52,3 +52,5 @@ parseJSONConfigFile
   -> IO ( Either (ConfigError String) PartialConf )
 parseJSONConfigFile =
   error "parseJSONConfigFile not implemented"
+
+-- Go to 'src/Level06/Conf.hs' next.
