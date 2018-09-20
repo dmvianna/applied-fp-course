@@ -149,16 +149,18 @@ newtype Port = Port
   -- You will notice we're using ``Word16`` as our type for the ``Port`` value.
   -- This is because a valid port number can only be a 16bit unsigned integer.
   { getPort :: Word16 }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 newtype DBFilePath = DBFilePath
   { getDBFilePath :: FilePath }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 -- Add some fields to the ``Conf`` type:
 -- - A customisable port number: ``Port``
 -- - A filepath for our SQLite database: ``DBFilePath``
 data Conf = Conf
+  { getConfPort       :: Port
+  , getConfDBFilePath :: DBFilePath }
 
 -- We're storing our Port as a Word16 to be more precise and prevent invalid
 -- values from being used in our application. However Wai is not so stringent.
@@ -174,11 +176,11 @@ confPortToWai
   :: Conf
   -> Int
 confPortToWai =
-  error "confPortToWai not implemented"
+  fromIntegral . getPort . getConfPort
 
 -- Similar to when we were considering our application types, leave this empty
 -- for now and add to it as you go.
-data ConfigError = ConfigError
+data ConfigError a = ConfigError a
   deriving Show
 
 -- Our application will be able to load configuration from both a file and
@@ -208,15 +210,15 @@ data ConfigError = ConfigError
 data PartialConf = PartialConf
   { pcPort       :: Last Port
   , pcDBFilePath :: Last DBFilePath
-  }
+  } deriving (Generic, Show)
 
 -- Before we can define our ``Monoid`` instance for ``PartialConf``, we'll have
 -- to define a Semigroup instance. We define our ``(<>)`` function to lean
 -- on the ``Semigroup`` instance for Last to always get the last value.
 instance Semigroup PartialConf where
   _a <> _b = PartialConf
-    { pcPort       = error "pcPort (<>) not implemented"
-    , pcDBFilePath = error "pcDBFilePath (<>) not implemented"
+    { pcPort      = pcPort (_a <> _b)
+    , pcDBFilePath = pcDBFilePath (_a <> _b)
     }
 
 -- We now define our ``Monoid`` instance for ``PartialConf``. Allowing us to
@@ -235,5 +237,8 @@ instance Monoid PartialConf where
 -- library to handle the parsing and decoding for us. In order to do this, we
 -- have to tell aeson how to go about converting the JSON into our PartialConf
 -- data structure.
-instance FromJSON PartialConf where
-  parseJSON = error "parseJSON for PartialConf not implemented yet."
+instance FromJSON PartialConf
+
+instance FromJSON Port
+
+instance FromJSON DBFilePath

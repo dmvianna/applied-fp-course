@@ -5,17 +5,18 @@ import           Data.ByteString.Lazy       (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
 import           Data.Text                  (Text)
+import           Data.Text.Encoding         as E
 
 import           Data.Bifunctor             (first)
 import           Data.Monoid                (Last (Last))
 
-import           Control.Exception          (try)
+import           Control.Exception          (displayException, try)
 
 import           Data.Aeson                 (FromJSON, Object)
 
 import qualified Data.Aeson                 as A
 
-import           Level06.Types              (ConfigError,
+import           Level06.Types              (ConfigError (..),
                                              PartialConf (PartialConf))
 -- Doctest setup section
 -- $setup
@@ -33,20 +34,21 @@ import           Level06.Types              (ConfigError,
 --
 -- | readConfFile
 -- >>> readConfFile "badFileName.no"
--- Left (undefined "badFileName.no: openBinaryFile: does not exist (No such file or directory)")
+-- Left (ConfigError "badFileName.no: openBinaryFile: does not exist (No such file or directory)")
 -- >>> readConfFile "files/test.json"
 -- Right "{\n  \"foo\": 33\n}\n"
 --
 readConfFile
   :: FilePath
-  -> IO ( Either ConfigError ByteString )
-readConfFile =
-  error "readConfFile not implemented"
+  -> IO ( Either (ConfigError String) ByteString )
+readConfFile fp = do
+  bs <- try $ LBS.readFile fp :: IO (Either IOError ByteString)
+  pure $ first (\e -> ConfigError $ show e) bs
 
 -- Construct the function that will take a ``FilePath``, read it in, decode it,
 -- and construct our ``PartialConf``.
 parseJSONConfigFile
   :: FilePath
-  -> IO ( Either ConfigError PartialConf )
+  -> IO ( Either (ConfigError String) PartialConf )
 parseJSONConfigFile =
   error "parseJSONConfigFile not implemented"
