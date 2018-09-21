@@ -7,7 +7,7 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 import           Data.Text                  (Text)
 import           Data.Text.Encoding         as E
 
-import           Data.Bifunctor             (first)
+import           Data.Bifunctor             (first, second)
 import           Data.Monoid                (Last (Last))
 
 import           Control.Exception          (displayException, try)
@@ -43,14 +43,18 @@ readConfFile
   -> IO ( Either (ConfigError String) ByteString )
 readConfFile fp = do
   bs <- try $ LBS.readFile fp :: IO (Either IOError ByteString)
-  pure $ first (\e -> ConfigError $ show e) bs
+  pure $ first (ConfigError . displayException) bs
 
 -- Construct the function that will take a ``FilePath``, read it in, decode it,
 -- and construct our ``PartialConf``.
 parseJSONConfigFile
   :: FilePath
   -> IO ( Either (ConfigError String) PartialConf )
-parseJSONConfigFile =
-  error "parseJSONConfigFile not implemented"
+parseJSONConfigFile fp = do
+  bs <- readConfFile fp
+  case second A.decode bs of
+    Left e          -> pure $ Left e
+    Right (Just x)  -> pure $ Right x
+    Right (Nothing) -> pure $ Left $ ConfigError "empty file"
 
 -- Go to 'src/Level06/Conf.hs' next.
