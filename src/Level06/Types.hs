@@ -181,7 +181,7 @@ confPortToWai =
 
 -- Similar to when we were considering our application types, leave this empty
 -- for now and add to it as you go.
-data ConfigError a = ConfigError a
+data ConfigError = ConfigError String
   deriving Show
 
 -- Our application will be able to load configuration from both a file and
@@ -229,7 +229,7 @@ instance Monoid PartialConf where
   mempty = PartialConf mempty mempty
   mappend = (<>)
 
-instance Monoid (Either (ConfigError String) PartialConf) where
+instance Monoid (Either ConfigError PartialConf) where
 
 -- When it comes to reading the configuration options from the command-line, we
 -- use the 'optparse-applicative' package. This part of the exercise has already

@@ -12,5 +12,5 @@ main = do
   -- Level03Tests.unitTests
   -- Level04Tests.unitTests
   -- Level05Tests.unitTests
-  -- Level06Tests.unitTests
+  Level06Tests.unitTests
   -- Level07Tests.unitTests

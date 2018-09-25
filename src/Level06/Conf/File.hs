@@ -40,7 +40,7 @@ import           Level06.Types              (ConfigError (..),
 --
 readConfFile
   :: FilePath
-  -> IO ( Either (ConfigError String) ByteString )
+  -> IO ( Either ConfigError ByteString )
 readConfFile fp = do
   bs <- try $ LBS.readFile fp :: IO (Either IOError ByteString)
   pure $ first (ConfigError . displayException) bs
@@ -49,7 +49,7 @@ readConfFile fp = do
 -- and construct our ``PartialConf``.
 parseJSONConfigFile
   :: FilePath
-  -> IO ( Either (ConfigError String) PartialConf )
+  -> IO ( Either ConfigError PartialConf )
 parseJSONConfigFile fp = do
   bs <- readConfFile fp
   case second A.decode bs of

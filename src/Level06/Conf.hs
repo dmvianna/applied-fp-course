@@ -34,7 +34,7 @@ defaultConf =
 -- providing the relevant error.
 makeConfig
   :: PartialConf
-  -> Either (ConfigError String) Conf
+  -> Either ConfigError Conf
 makeConfig pc =
   let mPort = (getLast . pcPort) pc
       mDBFilePath = (getLast . pcDBFilePath) pc
@@ -58,7 +58,7 @@ makeConfig pc =
 --
 parseOptions
   :: FilePath
-  -> IO (Either (ConfigError String) Conf)
+  -> IO (Either ConfigError Conf)
 parseOptions fp = do
   commandLine <- commandLineParser
   file <- parseJSONConfigFile fp
