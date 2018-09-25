@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-missing-methods #-}
+
 module Level06.Conf
     ( parseOptions
     ) where
@@ -7,11 +8,13 @@ module Level06.Conf
 import           GHC.Word                 (Word16)
 
 import           Data.Bifunctor           (first)
-import           Data.Monoid              ((<>))
+import           Data.Monoid              (Last (..), getLast, (<>))
 
-import           Level06.Types            (Conf, ConfigError,
-                                           DBFilePath (DBFilePath), PartialConf,
-                                           Port (Port))
+import           Data.Maybe               (fromJust)
+
+import           Level06.Types            (Conf (..), ConfigError (..),
+                                           DBFilePath (DBFilePath),
+                                           PartialConf (..), Port (Port))
 
 import           Level06.Conf.CommandLine (commandLineParser)
 import           Level06.Conf.File        (parseJSONConfigFile)
@@ -22,16 +25,26 @@ import           Level06.Conf.File        (parseJSONConfigFile)
 defaultConf
   :: PartialConf
 defaultConf =
-  error "defaultConf not implemented"
+  PartialConf
+  { pcPort = Last $ Just $ Port 3000
+  , pcDBFilePath = Last $ Just $ DBFilePath "app_db.db" }
 
 -- We need something that will take our PartialConf and see if can finally build
 -- a complete ``Conf`` record. Also we need to highlight any missing values by
 -- providing the relevant error.
 makeConfig
   :: PartialConf
-  -> Either ConfigError Conf
-makeConfig =
-  error "makeConfig not implemented"
+  -> Either (ConfigError String) Conf
+makeConfig pc =
+  let mPort = (getLast . pcPort) pc
+      mDBFilePath = (getLast . pcDBFilePath) pc
+  in
+    case (mPort, mDBFilePath) of
+      (Just port, Just filePath) ->
+        Right $ Conf { getConfPort = port,
+                       getConfDBFilePath = filePath }
+      (Nothing, _) -> Left $ ConfigError "invalid port"
+      (_, Nothing) -> Left $ ConfigError "invalid file path"
 
 -- This is the function we'll actually export for building our configuration.
 -- Since it wraps all our efforts to read information from the command line, and
@@ -45,10 +58,26 @@ makeConfig =
 --
 parseOptions
   :: FilePath
-  -> IO (Either ConfigError Conf)
-parseOptions =
+  -> IO (Either (ConfigError String) Conf)
+parseOptions fp = do
+  commandLine <- commandLineParser
+  file <- parseJSONConfigFile fp
+  pure $ either Left (Right . fromPartial)
+    (defaults <> file <> pure commandLine)
+  where
+    defaults = toPartial <$> makeConfig defaultConf
+    toPartial :: Conf -> PartialConf
+    toPartial c =
+      PartialConf
+      { pcPort = Last $ Just $ getConfPort c
+      , pcDBFilePath = Last $ Just $ getConfDBFilePath c }
+    fromPartial p =
+      Conf
+      { getConfPort =
+        (fromJust . getLast . pcPort) p
+      , getConfDBFilePath =
+        (fromJust . getLast . pcDBFilePath) p }
   -- Parse the options from the config file: "files/appconfig.json"
   -- Parse the options from the commandline using 'commandLineParser'
   -- Combine these with the default configuration 'defaultConf'
   -- Return the final configuration value
-  error "parseOptions not implemented"

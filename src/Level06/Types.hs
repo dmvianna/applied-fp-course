@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 {-# OPTIONS_GHC -fno-warn-missing-methods #-}
 {-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Level06.Types
   ( Error (..)
@@ -227,6 +228,8 @@ instance Semigroup PartialConf where
 instance Monoid PartialConf where
   mempty = PartialConf mempty mempty
   mappend = (<>)
+
+instance Monoid (Either (ConfigError String) PartialConf) where
 
 -- When it comes to reading the configuration options from the command-line, we
 -- use the 'optparse-applicative' package. This part of the exercise has already
