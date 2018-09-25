@@ -65,18 +65,23 @@ parseOptions fp = do
   pure $ either Left (Right . fromPartial)
     (defaults <> file <> pure commandLine)
   where
+    defaults :: Either ConfigError PartialConf
     defaults = toPartial <$> makeConfig defaultConf
+
     toPartial :: Conf -> PartialConf
     toPartial c =
       PartialConf
       { pcPort = Last $ Just $ getConfPort c
       , pcDBFilePath = Last $ Just $ getConfDBFilePath c }
+
+    fromPartial :: PartialConf -> Conf
     fromPartial p =
       Conf
       { getConfPort =
         (fromJust . getLast . pcPort) p
       , getConfDBFilePath =
         (fromJust . getLast . pcDBFilePath) p }
+
   -- Parse the options from the config file: "files/appconfig.json"
   -- Parse the options from the commandline using 'commandLineParser'
   -- Combine these with the default configuration 'defaultConf'
