@@ -230,6 +230,7 @@ instance Monoid PartialConf where
   mappend = (<>)
 
 instance Monoid (Either ConfigError PartialConf) where
+  mempty = Right mempty
   mappend = (<>)
 
 -- When it comes to reading the configuration options from the command-line, we
