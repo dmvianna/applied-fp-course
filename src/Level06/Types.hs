@@ -230,6 +230,7 @@ instance Monoid PartialConf where
   mappend = (<>)
 
 instance Monoid (Either ConfigError PartialConf) where
+  mappend = (<>)
 
 -- When it comes to reading the configuration options from the command-line, we
 -- use the 'optparse-applicative' package. This part of the exercise has already
