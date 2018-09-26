@@ -34,9 +34,12 @@ import qualified Data.Aeson                         as A
 import           Level06.AppM                       (AppM, liftEither, runAppM)
 import qualified Level06.Conf                       as Conf
 import qualified Level06.DB                         as DB
-import           Level06.Types                      (Conf, ContentType (..),
+import           Level06.Types                      (Conf, ConfigError (..),
+                                                     ContentType (..),
                                                      Error (..),
                                                      RqType (AddRq, ListRq, ViewRq),
+                                                     getConfDBFilePath,
+                                                     getDBFilePath,
                                                      mkCommentText, mkTopic,
                                                      renderContentType)
 
@@ -45,6 +48,7 @@ import           Level06.Types                      (Conf, ContentType (..),
 -- single type so that we can deal with the entire start-up process as a whole.
 data StartUpError
   = DBInitErr SQLiteResponse
+  | ConfigErr ConfigError
   deriving Show
 
 runApp :: IO ()
@@ -53,7 +57,7 @@ runApp = do
   cfgE <- prepareAppReqs
   -- Loading the configuration can fail, so we have to take that into account now.
   case cfgE of
-    Left err   -> undefined
+    Left err   -> putStrLn $ show err
     Right _cfg -> run undefined undefined
 
 -- We need to complete the following steps to prepare our app requirements:
@@ -66,8 +70,16 @@ runApp = do
 --
 prepareAppReqs
   :: IO ( Either StartUpError ( Conf, DB.FirstAppDB ) )
-prepareAppReqs =
-  error "copy your prepareAppReqs from the previous level."
+prepareAppReqs = do
+    eConf <- Conf.parseOptions "files/appconfig.json"
+    case eConf of
+      Right x -> do
+        db <- (DB.initDB . getDBFilePath . getConfDBFilePath) x
+        pure $ either
+          (Left . DBInitErr)
+          (\db' -> Right $ (x, db'))
+          db
+      Left e -> pure $ Left $ ConfigErr e
 
 -- | Some helper functions to make our lives a little more DRY.
 mkResponse
