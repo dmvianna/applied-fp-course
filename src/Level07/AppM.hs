@@ -96,15 +96,16 @@ instance MonadError Error AppM where
 instance MonadReader Env AppM where
   -- Return the current Env from the AppM.
   ask :: AppM Env
-  ask = error "ask for AppM not implemented"
+  ask = AppM $ \env -> pure $ pure env
 
   -- Run a AppM inside of the current one using a modified Env value.
   local :: (Env -> Env) -> AppM a -> AppM a
-  local = error "local for AppM not implemented"
+  local f x =
+    AppM $ \env -> runAppM x (f env)
 
   -- This will run a function on the current Env and return the result.
   reader :: (Env -> a) -> AppM a
-  reader = error "reader for AppM not implemented"
+  reader f = AppM $ \env -> pure $ pure (f env)
 
 instance MonadIO AppM where
   -- Take a type of 'IO a' and lift it into our AppM.
