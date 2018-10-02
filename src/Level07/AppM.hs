@@ -52,15 +52,22 @@ runAppM
   :: AppM a
   -> Env
   -> IO (Either Error a)
-runAppM =
-  error "runAppM not implemented"
+runAppM (AppM f) =
+  f
 
 instance Applicative AppM where
   pure :: a -> AppM a
-  pure = error "pure for AppM not implemented"
+  pure f = AppM (\env -> pure $ pure f)
 
   (<*>) :: AppM (a -> b) -> AppM a -> AppM b
-  (<*>) = error "spaceship for AppM not implemented"
+  (<*>) (AppM f') (AppM x') =
+    AppM $ \env -> do
+    f'' <- liftIO (f' env)
+    x'' <- liftIO (x' env)
+    case (f'', x'') of
+      (Right f, Right x) -> pure $ Right (f x)
+      (Left e,_)         -> pure $ Left e
+      (_, Left e)        -> pure $ Left e
 
 instance Monad AppM where
   return :: a -> AppM a
