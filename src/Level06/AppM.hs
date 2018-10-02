@@ -101,4 +101,4 @@ liftEither
   :: Either Error a
   -> AppM a
 liftEither =
-  error "throwLeft not implemented"
+  either throwError pure
