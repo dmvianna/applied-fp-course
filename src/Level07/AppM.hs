@@ -71,12 +71,17 @@ instance Applicative AppM where
 
 instance Monad AppM where
   return :: a -> AppM a
-  return = error "return for AppM not implemented"
+  return = pure
 
   -- When it comes to running functions in AppM as a Monad, this will take care
   -- of passing the Env from one function to the next.
   (>>=) :: AppM a -> (a -> AppM b) -> AppM b
-  (>>=) = error "bind for AppM not implemented"
+  (>>=) (AppM x') f =
+    AppM $ \env -> do
+    x'' <- liftIO (x' env)
+    case x'' of
+      Right x -> (runAppM $ f x) env
+      Left e  -> pure $ Left e
 
 instance MonadError Error AppM where
   throwError :: Error -> AppM a
