@@ -85,10 +85,13 @@ instance Monad AppM where
 
 instance MonadError Error AppM where
   throwError :: Error -> AppM a
-  throwError = error "throwError for AppM not implemented"
+  throwError e = AppM (\env -> pure $ Left e)
 
   catchError :: AppM a -> (Error -> AppM a) -> AppM a
-  catchError = error "catchError for AppM not implemented"
+  catchError x' f =
+    AppM $ \env -> do
+    x <- liftIO $ runAppM x' env
+    runAppM (either f pure x) env
 
 instance MonadReader Env AppM where
   -- Return the current Env from the AppM.
