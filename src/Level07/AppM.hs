@@ -110,12 +110,12 @@ instance MonadReader Env AppM where
 instance MonadIO AppM where
   -- Take a type of 'IO a' and lift it into our AppM.
   liftIO :: IO a -> AppM a
-  liftIO = error "liftIO for AppM not implemented"
+  liftIO = liftIO >>= pure
 
 liftEither
   :: Either Error a
   -> AppM a
 liftEither =
-  error "throwLeft not implemented"
+  either throwError pure
 
 -- Move on to ``src/Level07/DB.hs`` after this
