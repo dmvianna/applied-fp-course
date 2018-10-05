@@ -25,9 +25,10 @@ import qualified Database.SQLite.Simple             as Sql
 import qualified Database.SQLite.SimpleErrors       as Sql
 import           Database.SQLite.SimpleErrors.Types (SQLiteResponse)
 
-import           Level07.AppM                      (AppM, Env (envDB))
+import           Level07.AppM                       (AppM (..), Env (envDB),
+                                                     liftEither, runAppM)
 
-import           Level07.Types                     (Comment, CommentText,
+import           Level07.Types                      (Comment, CommentText,
                                                      DBFilePath (getDBFilePath),
                                                      Error (DBError),
                                                      FirstAppDB (FirstAppDB, dbConn),
@@ -63,37 +64,60 @@ initDB fp = Sql.runDBAction $ do
 getDBConn
   :: AppM Connection
 getDBConn =
-  error "getDBConn not implemented"
+  AppM $ \env -> pure $ pure $ asks (dbConn . envDB) env
 
 runDB
   :: (a -> Either Error b)
   -> (Connection -> IO a)
   -> AppM b
-runDB =
-  error "runDB not re-implemented"
+runDB fe fc =
+  AppM $ \env -> do
+  eConn <- runAppM getDBConn env
+  case eConn of
+    Right conn -> do
+      a <- liftIO $ fc conn
+      pure $ fe a
+    Left e     -> pure $ Left e
 
 getComments
   :: Topic
   -> AppM [Comment]
-getComments =
-  error "Copy your completed 'getComments' and refactor to match the new type signature"
+getComments t =
+  -- Write the query with an icky string and remember your placeholders!
+  let q = "SELECT id,topic,comment,time FROM comments WHERE topic = ?"
+      fc conn = Sql.query conn q (Sql.Only . getTopic $ t)
+  in
+      runDB (traverse fromDBComment) fc
 
 addCommentToTopic
   :: Topic
   -> CommentText
   -> AppM ()
-addCommentToTopic =
-  error "Copy your completed 'appCommentToTopic' and refactor to match the new type signature"
+addCommentToTopic t c = do
+  nowish <- liftIO getCurrentTime
+  let q =
+        "INSERT INTO comments (topic,comment,time) VALUES (?,?,?)"
+      fc conn =
+          Sql.execute conn q (getTopic t
+                             ,getCommentText c
+                             ,nowish)
+  runDB Right fc
 
 getTopics
   :: AppM [Topic]
 getTopics =
-  error "Copy your completed 'getTopics' and refactor to match the new type signature"
+  let q = "SELECT DISTINCT topic FROM comments"
+      fc conn = Sql.query_ conn q
+  in
+    runDB (traverse ( mkTopic . Sql.fromOnly )) fc
 
 deleteTopic
   :: Topic
   -> AppM ()
-deleteTopic =
-  error "Copy your completed 'deleteTopic' and refactor to match the new type signature"
+deleteTopic t =
+  let q = "DELETE FROM comments WHERE topic = ?"
+      fc conn = Sql.execute conn q (Sql.Only . getTopic $ t)
+  in
+    runDB Right fc
 
 -- Go on to 'src/Level07/Core.hs' next.
