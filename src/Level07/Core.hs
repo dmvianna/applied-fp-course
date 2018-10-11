@@ -37,7 +37,7 @@ import qualified Level07.DB                         as DB
 
 import qualified Level07.Responses                  as Res
 import           Level07.Types                      (Conf (dbFilePath),
-                                                     ConfigError,
+                                                     ConfigError (..),
                                                      ContentType (PlainText),
                                                      Error (DBError, EmptyCommentText, EmptyTopic, UnknownRoute),
                                                      RqType (AddRq, ListRq, ViewRq),
@@ -76,8 +76,25 @@ runApp = do
 -- demonstrate how easily it can be applied simplify error handling.
 prepareAppReqs
   :: IO (Either StartUpError Env)
-prepareAppReqs = runExceptT $
-  error "Copy your completed 'prepareAppReqs' from the previous level and refactor it here"
+prepareAppReqs = do
+  eConf <- Conf.parseOptions "files/appconfig.json"
+  case eConf of
+    Right conf -> do
+      db <- (DB.initDB . dbFilePath) conf
+      pure $ handleDB conf db
+    Left e -> (pure . Left . ConfErr) e
+  where
+    logFn :: Text -> AppM ()
+    logFn t = pure =<< liftIO (hPutStrLn stderr t)
+    handleDB :: Conf
+             -> Either SQLiteResponse DB.FirstAppDB
+             -> Either StartUpError Env
+    handleDB conf (Right db) =
+      Right $ Env
+      { envLoggingFn = logFn
+      , envConfig = conf
+      , envDB = db }
+    handleDB _ (Left e) = Left $ DBInitErr e
 
 -- Now that our request handling and response creating functions operate
 -- within our AppM context, we need to run the AppM to get our IO action out
