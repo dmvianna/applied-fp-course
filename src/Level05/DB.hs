@@ -77,7 +77,7 @@ runDB
   -> AppM b
 runDB f ioA = do
   a <- liftIO ioA
-  b <- E.liftEither $ f a
+  b <- liftEither $ f a
   pure b
 
 getComments
