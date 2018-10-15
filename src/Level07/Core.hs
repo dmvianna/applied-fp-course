@@ -42,6 +42,7 @@ import           Level07.Types                      (Conf (dbFilePath),
                                                      Error (DBError, EmptyCommentText, EmptyTopic, UnknownRoute),
                                                      RqType (AddRq, ListRq, ViewRq),
                                                      confPortToWai,
+                                                     getDBFilePath,
                                                      mkCommentText, mkTopic)
 
 import           Level07.AppM                       (AppM, Env (Env, envConfig, envDB, envLoggingFn),
@@ -76,25 +77,21 @@ runApp = do
 -- demonstrate how easily it can be applied simplify error handling.
 prepareAppReqs
   :: IO (Either StartUpError Env)
-prepareAppReqs = do
-  eConf <- Conf.parseOptions "files/appconfig.json"
-  case eConf of
-    Right conf -> do
-      db <- (DB.initDB . dbFilePath) conf
-      pure $ handleDB conf db
-    Left e -> (pure . Left . ConfErr) e
+prepareAppReqs = runExceptT $ do
+  cfg <- initConf
+  db <- initDB $ dbFilePath cfg
+  pure (Env logFn cfg db)
   where
+    toStartUpErr e =
+      ExceptT . fmap (first e)
+    initConf =
+      toStartUpErr ConfErr $
+      Conf.parseOptions "files/appconfig.json"
+    initDB cfg =
+      toStartUpErr DBInitErr $
+      DB.initDB cfg
     logFn :: Text -> AppM ()
     logFn t = pure =<< liftIO (hPutStrLn stderr t)
-    handleDB :: Conf
-             -> Either SQLiteResponse DB.FirstAppDB
-             -> Either StartUpError Env
-    handleDB conf (Right db) =
-      Right $ Env
-      { envLoggingFn = logFn
-      , envConfig = conf
-      , envDB = db }
-    handleDB _ (Left e) = Left $ DBInitErr e
 
 -- Now that our request handling and response creating functions operate
 -- within our AppM context, we need to run the AppM to get our IO action out
