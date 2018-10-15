@@ -46,7 +46,7 @@ import           Level07.Types                      (Conf (dbFilePath),
                                                      mkCommentText, mkTopic)
 
 import           Level07.AppM                       (AppM, Env (Env, envConfig, envDB, envLoggingFn),
-                                                     liftEither)
+                                                     liftEither, runAppM)
 
 -- We're going to use the `mtl` ExceptT monad transformer to make the loading of our `Conf` a bit more straight-forward.
 import           Control.Monad.Except               (ExceptT (..), runExceptT)
@@ -100,8 +100,16 @@ prepareAppReqs = runExceptT $ do
 app
   :: Env
   -> Application
-app =
-  error "Copy your completed 'app' from the previous level and refactor it here"
+-- type Application :: Request
+                -- -> (Response -> IO ResponseReceived)
+                -- -> IO ResponseReceived
+app env rq cb =
+  runAppM appMResp env >>= cb . handleRespErr
+  where
+    appMResp = handleRequest =<< appMRq
+    appMRq = mkRequest rq
+    handleRespErr :: Either Error Response -> Response
+    handleRespErr = either mkErrorResponse id
 
 handleRequest
   :: RqType
