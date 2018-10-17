@@ -62,12 +62,9 @@ instance Applicative AppM where
   (<*>) :: AppM (a -> b) -> AppM a -> AppM b
   (<*>) (AppM f') (AppM x') =
     AppM $ \env -> do
-    f'' <- liftIO (f' env)
-    x'' <- liftIO (x' env)
-    case (f'', x'') of
-      (Right f, Right x) -> pure $ Right (f x)
-      (Left e,_)         -> pure $ Left e
-      (_, Left e)        -> pure $ Left e
+    f <- f' env
+    x <- x' env
+    pure $ f <*> x
 
 instance Monad AppM where
   return :: a -> AppM a
@@ -78,9 +75,9 @@ instance Monad AppM where
   (>>=) :: AppM a -> (a -> AppM b) -> AppM b
   (>>=) (AppM x') f =
     AppM $ \env -> do
-    x'' <- liftIO (x' env)
-    case x'' of
-      Right x -> (runAppM $ f x) env
+    x <- x' env
+    case x of
+      Right a -> runAppM (f a) env
       Left e  -> pure $ Left e
 
 instance MonadError Error AppM where
@@ -110,7 +107,7 @@ instance MonadReader Env AppM where
 instance MonadIO AppM where
   -- Take a type of 'IO a' and lift it into our AppM.
   liftIO :: IO a -> AppM a
-  liftIO = liftIO >>= pure
+  liftIO ioA = AppM $ \env -> (Right <$> ioA)
 
 liftEither
   :: Either Error a
