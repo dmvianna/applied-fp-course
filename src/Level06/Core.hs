@@ -38,6 +38,7 @@ import           Level06.Types                      (Conf, ConfigError (..),
                                                      ContentType (..),
                                                      Error (..),
                                                      RqType (AddRq, ListRq, ViewRq),
+                                                     confPortToWai,
                                                      getConfDBFilePath,
                                                      getDBFilePath,
                                                      mkCommentText, mkTopic,
@@ -58,7 +59,9 @@ runApp = do
   -- Loading the configuration can fail, so we have to take that into account now.
   case cfgE of
     Left err   -> putStrLn $ show err
-    Right _cfg -> run undefined undefined
+    Right _cfg -> run
+      (confPortToWai $ fst _cfg)
+      (app (fst _cfg) (snd _cfg))
 
 -- We need to complete the following steps to prepare our app requirements:
 --
