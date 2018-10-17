@@ -73,32 +73,33 @@ runAppM (AppM m) =
 
 instance Functor AppM where
   fmap :: (a -> b) -> AppM a -> AppM b
-  fmap f (AppM x') = do
-    ea <- liftIO x'
-    AppM $ pure $ either Left (\a -> Right $ f a) ea
+  fmap f (AppM x') =
+    AppM $ (fmap . fmap) f x'
 
 instance Applicative AppM where
   pure :: a -> AppM a
   pure = AppM . pure . pure
 
   (<*>) :: AppM (a -> b) -> AppM a -> AppM b
-  (<*>) (AppM f') (AppM x') = do
-    x <- liftEither =<< liftIO x'
-    f <- liftEither =<< liftIO f'
-    AppM $ pure $ pure $ f x
+  AppM f' <*> AppM x' = AppM $ do
+    f <- f'
+    x <- x'
+    pure $ f <*> x
 
 instance Monad AppM where
   return :: a -> AppM a
   return = pure
 
   (>>=) :: AppM a -> (a -> AppM b) -> AppM b
-  (>>=) (AppM x') f' = do
-    x <- liftEither =<< liftIO x'
-    liftEither =<< liftIO (runAppM (f' x))
+  AppM x' >>= f = AppM $ do
+    x <- x'
+    case x of
+      Right a -> runAppM $ f a
+      Left e  -> pure $ Left e
 
 instance MonadIO AppM where
   liftIO :: IO a -> AppM a
-  liftIO = liftIO >>= pure
+  liftIO ioA = AppM (Right <$> ioA)
 
 instance MonadError Error AppM where
   throwError :: Error -> AppM a
